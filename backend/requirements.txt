@@ -1,0 +1,7 @@
+asana
+cohere
+fastapi
+openai
+python-dotenv
+pydantic
+uvicorn
