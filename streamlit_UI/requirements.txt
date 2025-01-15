@@ -1,0 +1,7 @@
+python-dotenv
+datetime
+streamlit
+json
+todoist-api-python
+langchain-core
+langchain-cohere
