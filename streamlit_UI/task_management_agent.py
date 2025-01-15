@@ -264,7 +264,6 @@ def get_tasks_by_due_date(due_date: str):
     try:
         # Get all tasks
         all_tasks = todoist_api_instance.get_tasks()
-        print(due_date)
         
         if due_date == "today":
             due_date_str = today
