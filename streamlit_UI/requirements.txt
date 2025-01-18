@@ -1,7 +1,9 @@
 python-dotenv
 datetime
 streamlit
-json
 todoist-api-python
+langchain
 langchain-core
 langchain-cohere
+langchain_chroma
+langchain_community

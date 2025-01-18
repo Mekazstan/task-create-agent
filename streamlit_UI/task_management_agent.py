@@ -10,15 +10,30 @@ from todoist_api_python.api import TodoistAPI
 from langchain_core.tools import tool
 from langchain_cohere import ChatCohere
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage, ToolMessage
+from langchain_community.embeddings.sentence_transformer import SentenceTransformerEmbeddings
+from langchain_chroma import Chroma
 
 load_dotenv()
 
 # Loading the model
 cohere_api_token = os.getenv('COHERE_API_KEY', '')
+rag_directory = os.getenv('DIRECTORY', 'meeting_notes')
 
 # Initializing Todoist API
 todoist_api_key = os.getenv('TODOIST_API_KEY', '')
 todoist_api_instance = TodoistAPI(todoist_api_key)
+
+# ~~~~~~~~~~~~~~~ Function to get the Vector DB for RAG ~~~~~~~~~~~~~~~~
+
+@st.cache_resource
+def get_chroma_instance():
+    # Create the open-source embedding function. NB: Use same funtion used for embedding docs to ChromaDB
+    embedding_function = SentenceTransformerEmbeddings(model_name="all-MiniLM-L6-v2")
+
+    # Get the Chroma instance from what is saved to the disk
+    return Chroma(persist_directory="./chroma_db", embedding_function=embedding_function)
+
+db = get_chroma_instance()
 
 
 
@@ -437,6 +452,24 @@ def complete_task(project_name: str, task_content: str):
     except Exception as e:
         return {"error": f"Error completing task: {e}"}
 
+@tool
+def query_documents(question):
+    """
+    Uses RAG to query documents for information to answer a question
+    that requires specific context that could be found in documents
+
+    Example call:
+
+    query_documents("What are the action items from the meeting on the 20th?")
+    Args:
+        question (str): The question the user asked that might be answerable from the searchable documents
+    Returns:
+        str: The list of texts (and their sources) that matched with the question the closest using RAG
+    """
+    similar_docs = db.similarity_search(question, k=3)
+    docs_formatted = list(map(lambda doc: f"Source: {doc.metadata.get('source', 'NA')}\nContent: {doc.page_content}", similar_docs))
+
+    return str(docs_formatted)
 
 
 # Maps the function names to the actual function object in the script
@@ -451,7 +484,8 @@ available_functions = {
     "get_tasks_by_due_date": get_tasks_by_due_date,
     "create_new_task": create_new_task,
     "update_task": update_task,
-    "complete_task": complete_task
+    "complete_task": complete_task,
+    "query_documents": query_documents
 }     
 
 
